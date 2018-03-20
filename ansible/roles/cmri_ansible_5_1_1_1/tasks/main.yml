@@ -3,7 +3,7 @@
     source /etc/yardstick/openstack.creds;
     export flv_name=test_flv_$RANDOM;
     echo $flv_name;
-    openstack flavor create --vcpus 2 --ram 1024 --disk 5 $flv_name;
+    openstack --insecure flavor create --vcpus 2 --ram 1024 --disk 5 $flv_name;
   args:
     executable: /bin/bash
   register: o_create_flavor
@@ -15,11 +15,11 @@
     export vm1_name=test_vm1_$RANDOM;
     export vm2_name=test_vm2_$RANDOM;
     export vm3_name=test_vm3_$RANDOM;
-    openstack server create --flavor {{ o_create_flavor.stdout_lines[0] }} --image centos_yardstick \
+    openstack --insecure server create --flavor {{ o_create_flavor.stdout_lines[0] }} --image centos_yardstick \
     --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm1_name;
-    openstack server create --flavor {{ o_create_flavor.stdout_lines[0] }} --image centos_yardstick \
+    openstack --insecure server create --flavor {{ o_create_flavor.stdout_lines[0] }} --image centos_yardstick \
     --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm2_name;
-    openstack server create --flavor {{ o_create_flavor.stdout_lines[0] }} --image centos_yardstick \
+    openstack --insecure server create --flavor {{ o_create_flavor.stdout_lines[0] }} --image centos_yardstick \
     --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm3_name;
     echo $vm1_name $vm2_name $vm3_name;
   args:
@@ -31,14 +31,14 @@
   shell:
     sleep 40;
     source /etc/yardstick/openstack.creds;
-    openstack server delete {{ o_create_vm.stdout_lines[-1] }};
+    openstack --insecure server delete {{ o_create_vm.stdout_lines[-1] }};
   args:
     executable: /bin/bash
 
 - name: delete flavor
   shell:
     source /etc/yardstick/openstack.creds;
-    openstack flavor delete {{ o_create_flavor.stdout_lines[0] }};
+    openstack --insecure flavor delete {{ o_create_flavor.stdout_lines[0] }};
   args:
     executable: /bin/bash
 
