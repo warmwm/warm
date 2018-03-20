@@ -2,7 +2,7 @@
   shell:
     source /etc/yardstick/openstack.creds;
     export net1_name=test_net1_$RANDOM;
-    openstack network create --share --provider-physical-network physnet --provider-network-type vlan --provider-segment 1507 $net1_name;
+    openstack --insecure network create --share --provider-physical-network physnet --provider-network-type vlan --provider-segment 1507 $net1_name;
     echo $net1_name;
   args:
     executable: /bin/bash
@@ -14,9 +14,9 @@
     sleep 5;
     source /etc/yardstick/openstack.creds;
     export sub1_name=test_sub1_$RANDOM;
-    openstack subnet create --network '{{ o_create_net.stdout_lines[-1] }}' --allocation-pool start=192.168.1.100,end=192.168.1.200 \
+    openstack --insecure subnet create --network '{{ o_create_net.stdout_lines[-1] }}' --allocation-pool start=192.168.1.100,end=192.168.1.200 \
     --gateway 192.168.1.1 --subnet-range 192.168.1.0/24 $sub1_name;
-    openstack subnet show $sub1_name;
+    openstack --insecure subnet show $sub1_name;
     echo $sub1_name;
   args:
     executable: /bin/bash
@@ -28,7 +28,7 @@
     sleep 10;
     source /etc/yardstick/openstack.creds;
     export vm1_name=test_vm1_$RANDOM;
-    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id={{ o_create_net.stdout_lines[-1] }} \
+    openstack --insecure server create --flavor yardstick-flavor --image centos_yardstick --nic net-id={{ o_create_net.stdout_lines[-1] }} \
     --security-group sg_yardstick --key key_yardstick $vm1_name;
     echo $vm1_name;
   args:
@@ -40,10 +40,10 @@
   shell:
     source /etc/yardstick/openstack.creds;
     export router_name=test_router_$RANDOM;
-    openstack router create $router_name;
-    openstack router set $router_name --external-gateway ext-net;
-    openstack router add subnet $router_name {{ o_create_sub.stdout_lines[-1] }};
-    openstack router show $router_name;
+    openstack --insecure router create $router_name;
+    openstack --insecure router set $router_name --external-gateway ext-net;
+    openstack --insecure router add subnet $router_name {{ o_create_sub.stdout_lines[-1] }};
+    openstack --insecure router show $router_name;
     echo $router_name;
   args:
     executable: /bin/bash
@@ -54,7 +54,7 @@
   shell:
     sleep 40;
     source /etc/yardstick/openstack.creds;
-    openstack server show {{ o_create_vm.stdout_lines[-1] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+    openstack --insecure server show {{ o_create_vm.stdout_lines[-1] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
   args:
     executable: /bin/bash
   register: o_vm_ip
@@ -63,9 +63,9 @@
 - name: floating ip association
   shell:
     source /etc/yardstick/openstack.creds;
-    export subnet_id=`openstack subnet show {{ o_create_sub.stdout_lines[-1] }} | grep ' id ' | awk -F'|' '{print $3}'`;
-    export port_id=`openstack port list | grep $subnet_id |  grep {{ o_vm_ip.stdout_lines[-1] }} | awk -F'|' '{print $2}' | xargs`;
-    openstack floating ip create --port $port_id ext-net | grep 'floating_ip_address' | awk -F'|' '{print $3}' | xargs;
+    export subnet_id=`openstack --insecure subnet show {{ o_create_sub.stdout_lines[-1] }} | grep ' id ' | awk -F'|' '{print $3}'`;
+    export port_id=`openstack --insecure port list | grep $subnet_id |  grep {{ o_vm_ip.stdout_lines[-1] }} | awk -F'|' '{print $2}' | xargs`;
+    openstack --insecure floating ip create --port $port_id ext-net | grep 'floating_ip_address' | awk -F'|' '{print $3}' | xargs;
   args:
     executable: /bin/bash
   register: o_create_fip
@@ -90,7 +90,7 @@
 - name: delete floating ip
   shell:
     source /etc/yardstick/openstack.creds;
-    openstack floating ip delete {{ o_create_fip.stdout_lines[-1] }};
+    openstack --insecure floating ip delete {{ o_create_fip.stdout_lines[-1] }};
   args:
     executable: /bin/bash
 
@@ -98,8 +98,8 @@
   shell:
     sleep 40;
     source /etc/yardstick/openstack.creds;
-    openstack router remove subnet {{ o_create_router.stdout_lines[-1] }} {{ o_create_sub.stdout_lines[-1] }};
-    openstack router delete {{ o_create_router.stdout_lines[-1] }};
+    openstack --insecure router remove subnet {{ o_create_router.stdout_lines[-1] }} {{ o_create_sub.stdout_lines[-1] }};
+    openstack --insecure router delete {{ o_create_router.stdout_lines[-1] }};
   args:
     executable: /bin/bash
 
@@ -107,7 +107,7 @@
   shell:
     sleep 10;
     source /etc/yardstick/openstack.creds;
-    openstack server delete {{ o_create_vm.stdout_lines[-1] }};
+    openstack --insecure server delete {{ o_create_vm.stdout_lines[-1] }};
   args:
     executable: /bin/bash
 
@@ -115,7 +115,7 @@
   shell:
     sleep 30;
     source /etc/yardstick/openstack.creds;
-    openstack subnet delete {{ o_create_sub.stdout_lines[-1] }};
+    openstack --insecure subnet delete {{ o_create_sub.stdout_lines[-1] }};
   args:
     executable: /bin/bash
 
@@ -123,7 +123,7 @@
   shell:
     sleep 10;
     source /etc/yardstick/openstack.creds;
-    openstack network delete {{ o_create_net.stdout_lines[-1] }};
+    openstack --insecure network delete {{ o_create_net.stdout_lines[-1] }};
   args:
     executable: /bin/bash
 
