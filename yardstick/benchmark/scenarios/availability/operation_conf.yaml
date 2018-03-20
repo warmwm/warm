@@ -1,0 +1,37 @@
+##############################################################################
+# Copyright (c) 2017 lihuansse@tongji.edu.cn and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# sample config file for ha test
+#
+schema: "yardstick:task:0.1"
+
+nova-create-instance:
+  action_script: ha_tools/nova/create_instance_from_image.bash
+  rollback_script: ha_tools/nova/delete_instance.bash
+
+swift-upload-file:
+  action_script: ha_tools/swift/upload.bash
+  rollback_script: ha_tools/swift/delete.bash
+
+swift-download-file:
+  action_script: ha_tools/swift/download.bash
+  rollback_script: ha_tools/file/remove_file.bash
+
+nova-create-flavor:
+  action_script: ha_tools/nova/create_flavor.bash
+  rollback_script: ha_tools/nova/delete_flavor.bash
+
+get-floatingip:
+  action_script: ha_tools/nova/get_server_floatingip.bash
+  rollback_script: ha_tools/nova/list_servers.bash
+
+get-vip-host:
+  action_script: ha_tools/pacemaker/get_vip_host.bash
+  rollback_script: ha_tools/pacemaker/get_resource_status.bash
+

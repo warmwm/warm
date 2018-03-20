@@ -1,0 +1,10 @@
+- name: show CPU mode of VM
+  ignore_errors: True
+  shell:
+    sleep 20;
+    grep 'cpu mode' -A 5 /etc/libvirt/qemu/{{ hostvars['localhost']['o_create_vm'].stdout_lines[-2] }}.xml || echo 'ERROR';
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+- debug: var=cmd.stderr_lines

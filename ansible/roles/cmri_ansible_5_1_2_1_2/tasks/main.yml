@@ -1,0 +1,11 @@
+- name: show CPU info of VM
+  ignore_errors: True
+  shell:
+    sleep 20;
+    virsh dumpxml {{ hostvars['localhost']['o_create_vm'].stdout_lines[-2] }} | grep '<cpu>' -A 6;
+    numastat -p {{ hostvars['localhost']['o_create_vm'].stdout_lines[-2] }};
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+- debug: var=cmd.stderr_lines

@@ -1,0 +1,131 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.3.5 'ssh instance by keypair'
+
+schema: "yardstick:task:0.1"
+
+{% set image = image or "centos_yardstick" %}
+{% set ram = ram or "1024" %}
+{% set flavor = flavor or "yardstick-flavor" %}
+{% set ssh_key = ssh_key or '/etc/yardstick/ssh/id_rsa' %}
+{% set ssh_user = ssh_user or 'root' %}
+{% set network = network or 'ext-net' %}
+{% set name = name or "yardstick_test_vm" %}
+
+scenarios:
+-
+  type: GetNetworkID
+
+  options:
+    network_name: {{network}}
+  output: rc network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateSecgroup
+
+  options:
+    sg_name: yardstick_sec_group
+    description: "security group for yardstick manual VM"
+  output: secgroup_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateInstance
+  options:
+    image_name: {{image}}
+    flavor_name: {{flavor}}
+    openstack_paras:
+      nics: [{"net-id": $network_id}]
+      name: {{name}}
+      security_groups: [$secgroup_id]
+  output: server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServer
+
+  options:
+    server_id: $server_id
+  output: status server
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServerIp
+
+  options:
+    server: $server
+    ip_type: fixed
+  output: server_ip
+  runner:
+    type: Iteration
+    iterations: 1
+
+
+-
+  type: sshKnownInstance
+  options:
+    floating_ip_addr: $server_ip
+    sshkey: {{ssh_key}}
+    ssh_user: {{ssh_user}}
+    file: yardstick/benchmark/scenarios/cmri/scripts/get_instance_mems.bash
+  output: status mems
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CheckValue
+
+  options:
+    value1: $mems
+    value2: {{ram}}
+    operator: eq
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteInstance
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 10
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelSecGroup
+
+  options:
+    secgroup_id: $secgroup_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy
+

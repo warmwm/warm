@@ -1,0 +1,45 @@
+- name: create server group (VM group)
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export sgrp_name=test_sgrp_$RANDOM;
+    openstack server group create --policy anti-affinity $sgrp_name;
+    openstack server group show $sgrp_name | grep id | awk -F'|' '{print $3}' | xargs;
+  args:
+    executable: /bin/bash
+  register: o_create_sg
+- debug: var=o_create_sg.stdout_lines
+
+- name: create VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export vm1_name=test_vm1_$RANDOM;
+    export vm2_name=test_vm2_$RANDOM;
+    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id=ext-net  \
+    --hint group={{ o_create_sg.stdout_lines[-1] }} --security-group sg_yardstick --key key_yardstick $vm1_name;
+    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id=ext-net  \
+    --hint group={{ o_create_sg.stdout_lines[-1] }} --security-group sg_yardstick --key key_yardstick $vm2_name;
+    openstack server show $vm1_name;
+    openstack server show $vm2_name;
+    echo $vm1_name;
+    echo $vm2_name;
+  args:
+    executable: /bin/bash
+  register: o_create_vm
+- debug: var=o_create_vm.stdout_lines
+
+- name: delete VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack server delete {{ o_create_vm.stdout_lines[-1] }};
+    openstack server delete {{ o_create_vm.stdout_lines[-2] }};
+  args:
+    executable: /bin/bash
+
+- name: delete server group
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack server group delete {{ o_create_sg.stdout_lines[-1] }};
+  args:
+    executable: /bin/bash
+
+

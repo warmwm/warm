@@ -1,0 +1,122 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.5.3.2 'MTU'
+
+schema: "yardstick:task:0.1"
+
+{% set name = name or "yardstick" %}
+{% set mtu = mtu or "1400" %}
+{% set image = image or "cirros-0.3.5" %}
+{% set flavor_name = flavor_name or "yardstick-flavor" %}
+{% set ssh_user = ssh_user or 'cirros' %}
+{% set ssh_passwd = ssh_passwd or 'cubswin:)' %}
+{% set network = network or 'ext-net' %}
+
+scenarios:
+-
+  type: GetNetworkID
+
+  options:
+    network_name: {{network}}
+  output: rc network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateSecgroup
+
+  options:
+    sg_name: {{name}}_sec_group
+    description: "security group for yardstick manual VM"
+  output: secgroup_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateInstance
+  options:
+    image_name: {{image}}
+    flavor_name: {{flavor_name}}
+    openstack_paras:
+      nics: [{"net-id": $network_id}]
+      name: yardstick_test_vm
+      security_groups: [$secgroup_id]
+  output: server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServer
+
+  options:
+    server_id: $server_id
+
+  output: status server
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServerIp
+
+  options:
+    server: $server
+    ip_type: fixed
+  output: server_ip
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: sshKnownInstance
+  options:
+    floating_ip_addr: $server_ip
+    ssh_passwd: {{ssh_passwd}}
+    ssh_user: {{ssh_user}}
+    file: yardstick/benchmark/scenarios/cmri/scripts/get_network_mtu.bash
+  output: status mtu
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CheckValue
+
+  options:
+    value1: $mtu
+    value2: {{mtu}}
+    operator: eq
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteInstance
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelSecGroup
+
+  options:
+    secgroup_id: $secgroup_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

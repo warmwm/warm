@@ -1,0 +1,83 @@
+schema: "yardstick:suite:0.1"
+
+name: "yardstick-cmri-ansible-testsuite"
+test_cases_dir: "tests/opnfv/test_cases/"
+
+
+test_cases:
+-
+    file_name: cmri_ansible_5_1_1_1.yaml
+
+-
+    file_name: cmri_ansible_5_1_1_2.yaml
+
+-
+    file_name: cmri_ansible_5_1_1_4.yaml
+
+-
+    file_name: cmri_ansible_5_1_1_5.yaml
+
+-
+    file_name: cmri_ansible_5_1_1_6.yaml
+
+-
+    file_name: cmri_ansible_5_1_1_7.yaml
+
+-
+    file_name: cmri_ansible_5_1_1_8.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_1.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_2.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_3.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_4.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_5.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_6.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_7.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_8.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_9.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_10_1.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_10_3.yaml
+
+-
+    file_name: cmri_ansible_5_1_2_10_4.yaml
+
+-
+    file_name: cmri_ansible_5_1_3_1.yaml
+
+-
+    file_name: cmri_ansible_5_1_3_2.yaml
+
+-
+    file_name: cmri_ansible_5_1_4_1_1.yaml
+
+-
+    file_name: cmri_ansible_5_1_4_1_2.yaml
+
+-
+    file_name: cmri_ansible_5_1_4_1_3.yaml
+
+#-
+#    file_name: cmri_ansible_5_1_4_1_4.yaml
+
+

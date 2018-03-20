@@ -1,0 +1,32 @@
+##############################################################################
+# Copyright (c) 2017 Huawei Technologies Co.,Ltd and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# sample config file about the POD information, including the
+# name/IP/user/ssh key of Bare Metal and Controllers/Computes
+#
+# The options of this config file include:
+# name: the name of this node
+# role: node's role, support role: Master/Controller/Comupte/BareMetal
+# ip: the node's IP address
+# user: the username for login
+# key_filename:the path of the private key file for login
+
+nodes:
+-
+    name: host1 
+    role: Controller
+    ip: 192.168.115.222
+    user: root
+    password: root
+-
+    name: host5 
+    role: Compute
+    ip: 192.168.115.211
+    user: root
+    password: root

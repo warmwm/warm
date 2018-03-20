@@ -1,0 +1,165 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.3.4 'Create Instance According to Flavor'
+
+schema: "yardstick:task:0.1"
+
+{% set name = name or "yardstick" %}
+{% set vcpus = vcpus or "2" %}
+{% set ram = ram or "2048" %}
+{% set disk = disk or "10" %}
+{% set image = image or "cirros-0.3.5" %}
+{% set flavor_name = flavor_name or "yardstick_test_flavor" %}
+{% set ssh_user = ssh_user or 'cirros' %}
+{% set ssh_passwd = ssh_passwd or 'cubswin:)' %}
+{% set network = network or 'ext-net' %}
+
+scenarios:
+-
+  type: CreateFlavor
+  options:
+    flavor_name: {{flavor_name}}
+    vcpus: {{vcpus}}
+    ram: {{ram}}
+    disk: {{disk}}
+    is_public: True
+  output: flavor_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetNetworkID
+
+  options:
+    network_name: {{network}}
+  output: rc network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateSecgroup
+
+  options:
+    sg_name: {{name}}_sec_group
+    description: "security group for yardstick manual VM"
+  output: secgroup_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateInstance
+  options:
+    image_name: {{image}}
+    flavor_name: {{flavor_name}}
+    openstack_paras:
+      nics: [{"net-id": $network_id}]
+      name: yardstick_test_vm
+      security_groups: [$secgroup_id]
+  output: server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServer
+
+  options:
+    server_id: $server_id
+
+  output: status server
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServerIp
+
+  options:
+    server: $server
+    ip_type: fixed
+  output: server_ip
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: sshKnownInstance
+  options:
+    floating_ip_addr: $server_ip
+    ssh_passwd: {{ssh_passwd}}
+    ssh_user: {{ssh_user}}
+    file: yardstick/benchmark/scenarios/cmri/scripts/get_instance_vcpus.bash
+  output: status vcpus
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CheckValue
+
+  options:
+    value1: $vcpus
+    value2: {{vcpus}}
+    operator: eq
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: sshKnownInstance
+  options:
+    floating_ip_addr: $server_ip
+    ssh_passwd: {{ssh_passwd}}
+    ssh_user: {{ssh_user}}
+    file: yardstick/benchmark/scenarios/cmri/scripts/get_instance_mems.bash
+  output: status mems
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: CheckValue
+
+  options:
+    value1: $mems
+    value2: {{ram}}
+    operator: le
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteInstance
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteFlavor
+  options:
+    flavor_name: {{flavor_name}}
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: DelSecGroup
+
+  options:
+    secgroup_id: $secgroup_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

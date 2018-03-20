@@ -1,0 +1,77 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.2.4 'start instance'
+
+schema: "yardstick:task:0.1"
+
+
+{% set name = name or "yardstick" %}
+{% set flavor = flavor or "yardstick-flavor" %}
+{% set image = image or "cirros-0.3.5" %}
+{% set network = network or "ext-net" %}
+
+scenarios:
+
+-
+  type: GetNetworkID
+
+  options:
+    network_name: {{network}}
+  output: rc network_id
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: CreateInstance
+  options:
+    image_name: {{image}}
+    flavor_name: {{flavor}}
+    openstack_paras:
+      nics: [{"net-id": $network_id}]
+      name: yardstick_test_vm
+  output: server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: StopServer
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: StartServer
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: DeleteInstance
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

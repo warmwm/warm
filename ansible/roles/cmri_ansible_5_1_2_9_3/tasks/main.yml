@@ -1,0 +1,7 @@
+- name: delete VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack server delete {{ hostvars['localhost']['vm_id'].stdout_lines[-1] }};
+  args:
+      executable: /bin/bash
+

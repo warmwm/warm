@@ -1,0 +1,61 @@
+---
+-   hosts: localhost
+    vars:
+        dedicated_compute: 'host5'
+    tasks:
+        - name: get nova-compute host
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack availability zone list --long | grep nova-compute | sort | awk '{print $7}';
+          args:
+              executable: /bin/bash
+          register: cmd
+        - debug: var=cmd.stdout_lines
+
+        - name: get existing flavor list
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack flavor list | grep "True" | cut -f 2 -d ' ';
+          args:
+              executable: /bin/bash
+          register: flavors
+        - debug: var=flavors.stdout_lines
+
+        - name: create host aggregate for dedicated compute host
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack aggregate create dedicated_compute;
+            nova aggregate-set-metadata dedicated_compute dedicated_compute=true;
+            nova aggregate-add-host dedicated_compute {{ dedicated_compute }};
+          args:
+              executable: /bin/bash
+
+        - name: set default property for all flavors
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack flavor set --property aggregate_instance_extra_specs:dedicated_compute=false {{ item }};
+          args:
+              executable: /bin/bash
+          with_items:
+              - '{{ flavors.stdout_lines }}'
+
+        - name: create flavor yardstick-dedicated_compute-flavor
+          shell:
+            source /etc/yardstick/openstack.creds;
+            nova flavor-create 'yardstick-dedicated_compute-flavor' $(cat /proc/sys/kernel/random/uuid) 512 6 2;
+            nova flavor-list
+          args:
+              executable: /bin/bash
+          register: cmd
+        - debug: var=cmd.stdout_lines
+
+        - name: set yardstick-dedicated_compute-flavor property
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack flavor set --property hw:cpu_policy=dedicated yardstick-dedicated_compute-flavor;
+            openstack flavor set --property hw:numa_nodes=1 yardstick-dedicated_compute-flavor;
+            openstack flavor set --property aggregate_instance_extra_specs:dedicated_compute=true yardstick-dedicated_compute-flavor;
+          args:
+              executable: /bin/bash
+          register: cmd
+        - debug: var=cmd.stdout_lines

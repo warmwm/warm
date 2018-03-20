@@ -1,0 +1,332 @@
+#!/bin/bash
+##############################################################################
+# Copyright (c) 2015 Ericsson AB and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+#
+# Set up the environment and run yardstick test suites.
+#
+# Example invocation: yardstick-verify -r 10.4.4.4 suite1.yaml suite2.yaml
+#
+# Openstack credentials must be set and the script must be run from its
+# original location in the yardstick repo.
+#
+# This script is intended to be used by the CI pipeline but it may also
+# be invoked manually.
+#
+
+SCRIPT=$0
+SCRIPT_ARGS=$@
+
+usage()
+{
+    cat << EOF
+usage: $0 options [TEST_SUITE ...]
+
+If no test suites are given ping.yaml is run.
+
+OPTIONS:
+   -h      Show this message
+   -r      Http target (example: -r 213.77.62.197/results)
+   -i      Influxdb target (example: -i 127.0.0.1:8086)
+   -m      Reporting target (example: -m 213.77.62.197/results)
+
+           Default target is dump to file ($DISPATCHER_FILE_NAME)
+
+EOF
+}
+
+DISPATCHER_TYPE=file
+DISPATCHER_FILE_NAME="/tmp/yardstick.out"
+DISPATCHER_HTTP_TARGET="http://testresults.opnfv.org/test/api/v1/results"
+DISPATCHER_INFLUXDB_TARGET=
+REPORTING_TARGET="${DISPATCHER_HTTP_TARGET}"
+
+while getopts "r:i:m:h" OPTION; do
+    case $OPTION in
+        h)
+            usage
+            exit 0
+            ;;
+        r)
+            DISPATCHER_TYPE=http
+            DISPATCHER_HTTP_TARGET=http://${OPTARG}
+            DISPATCHER_FILE_NAME=
+            ;;
+        i)
+            DISPATCHER_TYPE=influxdb
+            DISPATCHER_INFLUXDB_TARGET=http://${OPTARG}
+            DISPATCHER_FILE_NAME=
+            ;;
+        m)
+            REPORTING_TARGET=http://${OPTARG}
+            ;;
+        *)
+            echo "${OPTION} is not a valid argument"
+            exit 1
+            ;;
+    esac
+done
+
+shift $[OPTIND - 1]
+TEST_SUITES=$@
+
+exitcode=""
+
+error_exit()
+{
+    local rc=$?
+
+    if [ -z "$exitcode" ]; then
+        # In case of recursive traps (!?)
+        exitcode=$rc
+    fi
+
+    cleanup
+
+    echo "Exiting with RC=$exitcode"
+
+    exit $exitcode
+}
+
+set -o errexit
+set -o pipefail
+
+install_storperf()
+{
+    # Install Storper on huawei-pod1 and huawei-pod2
+    if [ "$NODE_NAME" == "huawei-pod1" -o "$NODE_NAME" == "huawei-pod2" ]; then
+        echo
+        echo "========== Installing storperf =========="
+
+        if ! yardstick -d plugin install plugin/CI/storperf.yaml; then
+            echo "Install storperf plugin FAILED";
+            exit 1
+        fi
+
+    fi
+}
+
+remove_storperf()
+{
+    # remove Storper from huawei-pod1 and huawei-pod2
+    if [ "$NODE_NAME" == "huawei-pod1" -o "$NODE_NAME" == "huawei-pod2" ]; then
+        echo
+        echo "========== Removing storperf =========="
+
+        if ! yardstick -d plugin remove plugin/CI/storperf.yaml; then
+            echo "Remove storperf plugin FAILED";
+            exit 1
+        fi
+
+    fi
+}
+
+report(){
+
+    echo
+    echo "========== Reporting Status =========="
+    curl -i -H 'content-type: application/json' -X POST -d \
+        "{\"project_name\": \"yardstick\",
+          \"case_name\": \"scenario_status\",
+          \"pod_name\":\"${NODE_NAME}\",
+          \"installer\":\"${INSTALLER_TYPE}\",
+          \"version\":\"$(basename ${YARDSTICK_BRANCH})\",
+          \"scenario\":\"${DEPLOY_SCENARIO}\",
+          \"description\": \"yardstick ci scenario status\",
+          \"criteria\":\"${1}\",
+          \"start_date\":\"${2}\",
+          \"stop_date\":\"${3}\",
+          \"details\":\"\"}" \
+          "${REPORTING_TARGET}"
+}
+
+run_test()
+{
+    echo
+    echo "========== Running yardstick test suites =========="
+
+    mkdir -p /etc/yardstick
+
+    cat << EOF > /etc/yardstick/yardstick.conf
+[DEFAULT]
+debug = False
+dispatcher = ${DISPATCHER_TYPE}
+
+[dispatcher_file]
+file_name = ${DISPATCHER_FILE_NAME}
+
+[dispatcher_http]
+timeout = 5
+target = ${DISPATCHER_HTTP_TARGET}
+
+[dispatcher_influxdb]
+timeout = 5
+target = ${DISPATCHER_INFLUXDB_TARGET}
+db_name = yardstick
+username = opnfv
+password = 0pnfv2015
+EOF
+
+    local failed=0
+    local start_date
+    local stop_date
+
+    if [ ${#SUITE_FILES[@]} -gt 0 ]; then
+
+        start_date=$(date '+%Y-%m-%d %H:%M:%S')
+        for suite in ${SUITE_FILES[*]}; do
+
+            echo "---------------------------"
+            echo "Running test suite: $suite"
+            echo "---------------------------"
+            if ! yardstick task start --suite $suite; then
+                 echo "test suite $suite FAILED";
+
+                # Mark the test suite failed but continue
+                # running the remaining test suites.
+                (( ++failed ))
+            fi
+            if [ ${DISPATCHER_TYPE} = file ]; then
+                echo "---------------------------"
+                echo "Dump test suite $suite result"
+                echo "---------------------------"
+                if [ -f ${DISPATCHER_FILE_NAME} ]; then
+                    cat ${DISPATCHER_FILE_NAME}
+                else
+                    echo "Test result file ${DISPATCHER_FILE_NAME} is not exist"
+                fi
+            fi
+        done
+        stop_date=$(date '+%Y-%m-%d %H:%M:%S')
+
+
+
+        local scenario_status="SUCCESS"
+
+        if [ $failed -gt 0 ]; then
+            scenario_status="FAILED"
+        fi
+
+        report "${scenario_status}" "${start_date}" "${stop_date}"
+
+        if [ $failed -gt 0 ]; then
+            echo "---------------------------"
+            echo "$failed out of ${SUITE_FILES[*]} test suites FAILED"
+            echo "---------------------------"
+            exit 1
+        fi
+
+    else
+
+        echo "---------------------------"
+        echo "Running samples/ping.yaml  "
+        echo "---------------------------"
+
+        if ! yardstick task start samples/ping.yaml; then
+            echo "Yardstick test FAILED"
+            exit 1
+        fi
+
+        if [ ${DISPATCHER_TYPE} = file ]; then
+            echo "---------------------------"
+            echo "Dump samples/ping.yaml test result"
+            echo "---------------------------"
+            if [ -f ${DISPATCHER_FILE_NAME} ]; then
+                cat ${DISPATCHER_FILE_NAME}
+            else
+                echo "Test result file ${DISPATCHER_FILE_NAME} is not exist"
+            fi
+        fi
+
+    fi
+
+}
+
+check_openstack(){
+    # check if some necessary variables is set
+    if [ -z "$OS_AUTH_URL" ]; then
+        echo "OS_AUTH_URL is unset or empty"
+        exit 1
+    fi
+
+    echo "OS_AUTH_URL is $OS_AUTH_URL"
+    echo
+
+    # check OpenStack services
+    if [[ $OS_INSECURE ]] && [[ "$(echo $OS_INSECURE | tr '[:upper:]' '[:lower:]')" = "true" ]]; then
+        SECURE="--insecure"
+    else
+        SECURE=""
+    fi
+    echo "Checking OpenStack services:"
+    for cmd in "openstack ${SECURE} image list" "openstack ${SECURE} server list" "openstack ${SECURE} stack list"; do
+        echo "  checking ${cmd} ..."
+        if ! $cmd >/dev/null; then
+            echo "error: command \"$cmd\" failed"
+            exit 1
+        fi
+    done
+
+    echo
+    echo "Checking for External network:"
+    for net in $(openstack network list --external -c Name -f value); do
+        echo "  external network: $net"
+    done
+}
+
+main()
+{
+    GITROOT=$(cd $(dirname $0) && git rev-parse --show-toplevel)
+
+    cd $GITROOT
+
+    export YARDSTICK_VERSION=$(git rev-parse HEAD)
+
+    SUITE_FILES=()
+
+    # find the test suite files
+    for suite in $TEST_SUITES; do
+        if [ -f $suite ]; then
+            SUITE_FILES+=($suite)
+        else
+            tsdir=$GITROOT/tests/opnfv/test_suites
+            if [ ! -f $tsdir/$suite ]; then
+                echo "Test suite \"$suite\" does not exist"
+                exit 1
+            fi
+            SUITE_FILES+=($tsdir/$suite)
+        fi
+    done
+
+    echo
+    echo "========== Running Yardstick CI with following parameters =========="
+    echo "Script options: ${SCRIPT} $SCRIPT_ARGS"
+    echo "Dispatcher: ${DISPATCHER_TYPE} ${DISPATCHER_FILE_NAME}"
+    echo "YARDSTICK_VERSION: ${YARDSTICK_VERSION}"
+    echo "Number of test suites: ${#SUITE_FILES[@]}"
+    for suite in ${SUITE_FILES[*]}; do
+        echo "     $suite"
+    done
+    echo
+
+    trap "error_exit" EXIT SIGTERM
+
+    if [[ "${DEPLOY_SCENARIO:0:2}" == "os" ]];then
+        check_openstack
+
+        source $YARDSTICK_REPO_DIR/tests/ci/clean_images.sh
+        source $YARDSTICK_REPO_DIR/tests/ci/load_images.sh
+    fi
+
+    install_storperf
+    run_test
+    remove_storperf
+}
+
+main

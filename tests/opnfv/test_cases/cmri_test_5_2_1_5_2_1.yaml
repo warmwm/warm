@@ -1,0 +1,249 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.5.2.1 'test case for internet isolation'
+
+schema: "yardstick:task:0.1"
+
+{% set flavor = flavor or "yardstick-flavor" %}
+{% set image = image or "cirros-0.3.5" %}
+{% set ssh_user = ssh_user or "cirros" %}
+{% set ssh_passwd = ssh_passwd or "cubswin:)" %}
+
+scenarios:
+-
+  type: CreateRouter
+
+  options:
+    openstack_paras:
+      name: yardstick_router
+      admin_state_up: True
+  output: router_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: RouterSetGateway
+
+  options:
+    router_id: $router_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateProject
+  options:
+    project_names: ['tenant_1','tenant_2']
+  output: rc project_id_1 project_id_2
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateNetwork
+  options:
+    openstack_paras:
+      name: Net_1
+      admin_state_up: True
+      project_id: $project_id_1
+  output: Net_id_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateNetwork
+  options:
+    openstack_paras:
+      name: Net_2
+      admin_state_up: True
+      project_id: $project_id_2
+  output: Net_id_2
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% for (i, net_cidr) in [ ('1', '192.168.1.0/24'), ('2', '192.168.2.0/24') ] %}
+
+-
+  type: CreateSubnet
+  options:
+    openstack_paras:
+      network_id: $Net_id_{{i}}
+      name: Subnet_{{i}}
+      cidr: {{ net_cidr }}
+      ip_version: 4
+  output: subnet_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateInstance
+  options:
+    image_name: {{image}}
+    flavor_name: {{flavor}}
+    openstack_paras:
+      nics: [{ "net-id": $Net_id_{{i}} }]
+      name: vm_test_vm_{{i}}
+  output: vm_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServer
+  options:
+    server_id: $vm_id_{{i}}
+  output: rc server_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServerIp
+  options:
+    server: $server_{{i}}
+    ip_type: fixed
+  output: server_ip_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% endfor %}
+
+-
+  type: RouterAddInterface
+
+  options:
+    router_id: $router_id
+    openstack_paras:
+      subnet_id: $subnet_id_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateFloatingIp
+  output: floating_ip_id_1 floating_ip_addr_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: FloatingIpAssociate
+
+  options:
+    floating_ip_addr: $floating_ip_addr_1
+    server_id: $vm_id_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CheckConnectivity
+
+  options:
+    src_ip_addr: $floating_ip_addr_1
+    dest_ip_addr: $server_ip_2
+    ssh_passwd: {{ssh_passwd}}
+    ssh_user: {{ssh_user}}
+  runner:
+    type: Iteration
+    iterations: 1
+  sla:
+    status: True
+    action: assert
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteFloatingIp
+
+  options:
+    floating_ip_id: $floating_ip_id_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelRouterInterface
+
+  options:
+    router_id: $router_id
+    subnet_id: $subnet_id_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% for i in [ '1', '2' ] %}
+
+-
+  type: DeleteInstance
+  options:
+    server_id: $vm_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelSubnet
+  options:
+    subnet_id: $subnet_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelNetwork
+  options:
+    network_id: $Net_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% endfor %}
+
+-
+  type: DeleteProject
+  options:
+    project_ids: [$project_id_1, $project_id_2]
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelRouterGateway
+
+  options:
+    router_id: $router_id
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: DelRouter
+
+  options:
+    router_id: $router_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy
+

@@ -1,0 +1,69 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.3.3 'Create Flavor'
+
+schema: "yardstick:task:0.1"
+
+{% set vcpus = vcpus or "2" %}
+{% set ram = ram or "2048" %}
+{% set disk = disk or "10" %}
+{% set flavor_name_new = flavor_name_new or "yardstick_test_flavor_new" %}
+{% set flavor_name = flavor_name or "yardstick_test_flavor" %}
+
+scenarios:
+-
+  type: CreateFlavor
+  options:
+    flavor_name: {{flavor_name}}
+    vcpus: {{vcpus}}
+    ram: {{ram}}
+    disk: {{disk}}
+    is_public: True
+  output: flavor_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 10
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: UpdateFlavorName
+  options:
+    flavor_name: {{flavor_name}}
+    flavor_name_new: {{flavor_name_new}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteFlavor
+  options:
+    flavor_name: {{flavor_name_new}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

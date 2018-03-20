@@ -1,0 +1,43 @@
+---
+- hosts: localhost
+  tasks:
+    - name: create VM
+      shell:
+        source /etc/yardstick/openstack.creds;
+        openstack server create --flavor yardstick-dedicated_compute-flavor --image centos_yardstick --nic net-id={{ network }}  --security-group sg_yardstick --key key_yardstick yardstick-ansible-instance;
+      args:
+          executable: /bin/bash
+      register: cmd
+    - debug: var=cmd.stdout_lines
+
+    - name: get VM id
+      shell:
+        source /etc/yardstick/openstack.creds;
+        nova list | grep yardstick-ansible-instance | awk '{print $2}'
+      args:
+          executable: /bin/bash
+      register: vm_id
+    - debug: var=vm_id.stdout_lines
+
+- hosts: dedicated_compute
+  tasks:
+    - name: show NUMA info of VM
+      shell:
+        sleep 20;
+        numastat -n -p {{ hostvars['localhost']['vm_id'].stdout_lines[0] }};
+      args:
+          executable: /bin/bash
+      register: cmd
+    - debug: var=cmd.stdout_lines
+
+- hosts: localhost
+  tasks:
+    - name: delete VM
+      shell:
+        source /etc/yardstick/openstack.creds;
+        openstack server delete {{ hostvars['localhost']['vm_id'].stdout_lines[0] }};
+      args:
+          executable: /bin/bash
+      register: cmd
+    - debug: var=cmd.stdout_lines
+

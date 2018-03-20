@@ -1,0 +1,8 @@
+- name: connect to compute and show kernel info
+  shell:
+      cat /proc/version;
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+

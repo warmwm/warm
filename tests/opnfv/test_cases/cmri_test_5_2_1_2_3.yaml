@@ -1,0 +1,41 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.2.3 'retrieve images'
+
+schema: "yardstick:task:0.1"
+
+{% set image_name = image_name or 'cirros-0.3.5' %}
+
+scenarios:
+-
+  type: GetImage
+  options:
+    image_name: {{image_name}}
+  output: rc name size disk_format visibility file min_ram
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: PrintAttr
+  options:
+    image_name: $name
+    size: $size
+    disk_format: $disk_format
+    visibility: $visibility
+    file: $file
+    min_ram: $min_ram
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

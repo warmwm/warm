@@ -1,0 +1,57 @@
+##############################################################################
+# Copyright (c) 2017 Ericsson AB and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# Sample benchmark task config file
+# Two scenarios run serially using different types of runners
+
+schema: "yardstick:task:0.1"
+
+scenarios:
+-
+  type: Ping
+  options:
+    packetsize: 100
+  host: apollo.demo
+  target: artemis.demo
+  runner:
+    type: Duration
+    duration: 20
+    interval: 1
+  sla:
+    max_rtt: 10
+    action: monitor
+-
+  type: Ping
+  host: apollo.demo
+  target: artemis.demo
+  runner:
+    type: Arithmetic
+    interval: 0.2
+    iterators:
+    -
+      name: packetsize
+      start: 100
+      stop: 6000
+      step: 100
+
+context:
+  name: demo
+  image: cirros-0.3.5
+  flavor: yardstick-flavor
+  user: cirros
+
+  servers:
+    apollo:
+      floating_ip: true
+    artemis:
+
+  networks:
+    test:
+      cidr: '10.0.1.0/24'
+

@@ -1,0 +1,83 @@
+schema: "yardstick:suite:0.1"                                                                                                                                                              
+
+name: "yardstick-cmri-ansible-testsuite"
+test_cases_dir: "tests/opnfv/test_cases/"
+
+
+test_cases:
+-
+    file_name: cmri_test_5_2_1_2_1.yaml
+-
+    file_name: cmri_test_5_2_1_2_2.yaml
+-
+    file_name: cmri_test_5_2_1_2_3.yaml
+-
+    file_name: cmri_test_5_2_1_2_4.yaml
+-
+    file_name: cmri_test_5_2_1_2_5.yaml
+-
+    file_name: cmri_test_5_2_1_2_6.yaml
+-
+    file_name: cmri_test_5_2_1_2_7.yaml
+-
+    file_name: cmri_test_5_2_1_2_8.yaml
+-
+    file_name: cmri_test_5_2_1_2_9.yaml
+-
+    file_name: cmri_test_5_2_1_3_3.yaml
+-
+    file_name: cmri_test_5_2_1_3_4.yaml
+-
+    file_name: cmri_test_5_2_1_3_5.yaml
+-
+    file_name: cmri_test_5_2_1_3_7.yaml
+-
+    file_name: cmri_test_5_2_1_4_1.yaml
+-
+    file_name: cmri_test_5_2_1_4_2.yaml
+-
+    file_name: cmri_test_5_2_1_4_3.yaml
+-
+    file_name: cmri_test_5_2_1_4_4.yaml
+-
+    file_name: cmri_test_5_2_1_4_5.yaml
+-
+    file_name: cmri_test_5_2_1_4_6.yaml
+-
+    file_name: cmri_test_5_2_1_5_1_2.yaml
+-
+    file_name: cmri_test_5_2_1_5_1_3.yaml
+-
+    file_name: cmri_test_5_2_1_5_1_5.yaml
+-
+    file_name: cmri_test_5_2_1_5_2_1.yaml
+-
+    file_name: cmri_test_5_2_1_5_2_2.yaml
+-
+    file_name: cmri_test_5_2_1_5_3_1.yaml
+-
+    file_name: cmri_test_5_2_1_5_3_2.yaml
+-
+    file_name: cmri_test_5_2_2_1.yaml
+-
+    file_name: cmri_test_5_2_2_2.yaml
+-
+    file_name: cmri_test_5_2_2_3.yaml
+-
+    file_name: cmri_test_5_2_2_4.yaml
+-
+    file_name: cmri_test_5_2_2_5.yaml
+-
+    file_name: cmri_test_5_2_2_6.yaml
+-
+    file_name: cmri_test_5_2_2_7.yaml
+-
+    file_name: cmri_test_5_2_2_9.yaml
+-
+    file_name: cmri_test_5_2_2_10.yaml
+-
+    file_name: cmri_test_5_2_2_12.yaml
+-
+    file_name: cmri_test_5_2_3_1.yaml
+-
+    file_name: cmri_test_5_2_3_2.yaml

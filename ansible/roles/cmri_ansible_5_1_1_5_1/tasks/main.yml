@@ -1,0 +1,30 @@
+- name: create VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export vm_name=test_vm_$RANDOM;
+    echo $vm_name;
+    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id=ext-net \
+    --security-group sg_yardstick --key key_yardstick $vm_name;
+  args:
+    executable: /bin/bash
+  register: o_create_vm
+- debug: var=o_create_vm.stdout_lines
+
+- name: get VM IP
+  shell:
+    sleep 40;
+    source /etc/yardstick/openstack.creds;
+    openstack server show {{ o_create_vm.stdout_lines[0] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+  args:
+      executable: /bin/bash
+  register: o_show_vm
+- debug: var=o_show_vm.stdout_lines
+
+- name: connect to VM and show kernel info
+  shell:
+    ssh -i /etc/yardstick/ssh/id_rsa -F /etc/yardstick/ssh/ssh_config root@{{ o_show_vm.stdout_lines[0] }} 'cat /proc/version' || echo 'ERROR';
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+

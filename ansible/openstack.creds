@@ -1,0 +1,14 @@
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_TENANT_NAME=admin
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=console
+export OS_AUTH_URL=http://192.168.115.222:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+export EXTERNAL_NETWORK=ext-net
+export OS_PROJECT_ID=86901a1182de48cbbd23220208990ce8
+export OS_REGION_NAME="RegionOne"
+export OS_INTERFACE=public
+

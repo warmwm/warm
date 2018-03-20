@@ -1,0 +1,6 @@
+---
+-   hosts: controller
+    tasks:
+        -   name: simple command
+            command: df -h
+

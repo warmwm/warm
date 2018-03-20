@@ -1,0 +1,68 @@
+##############################################################################
+# Copyright (c) 2017 Ericsson AB and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# Sample benchmark task config file
+# Demonstrate use of background scenarios
+
+schema: "yardstick:task:0.1"
+
+scenarios:
+-
+  type: CPUload
+  options:
+    interval: 1
+
+  host: zeus.demo
+
+  # This scenario is run as a background scenario and runs
+  # in parallel with other scenarios.
+  #
+  # Background scenarios are started before normal scenarios
+  # and are terminated when all normal scenarios have ended.
+  #
+  # A background scenario does not need a runner section as it
+  # will always use an infinite duration runner that are terminated
+  # when all normal scenarios have completed.
+  #
+  run_in_background: true   # default: false
+-
+  type: Iperf3
+  options:
+  host: zeus.demo
+  target: hera.demo
+
+  runner:
+    type: Duration
+    duration: 60
+
+  sla:
+    bytes_per_second: 2900000000
+    action: monitor
+
+context:
+  name: demo
+  image: yardstick-image
+  flavor: yardstick-flavor
+  user: ubuntu
+
+  placement_groups:
+    pgrp1:
+      policy: "availability"
+
+  servers:
+    zeus:
+      floating_ip: true
+      placement: "pgrp1"
+    hera:
+      floating_ip: true
+      placement: "pgrp1"
+
+  networks:
+    test:
+      cidr: '10.0.1.0/24'

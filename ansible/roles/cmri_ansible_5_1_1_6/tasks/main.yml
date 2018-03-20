@@ -1,0 +1,6 @@
+- name: show KVM version of compute
+  shell: qemu-img --version
+  args:
+    executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines

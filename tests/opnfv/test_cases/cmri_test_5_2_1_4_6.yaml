@@ -1,0 +1,144 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.4.6 'create and delete snapshot from volume'
+
+schema: "yardstick:task:0.1"
+
+{% set snapshot_name_1 = snapshot_name_1 or 'volume1_snap' %}
+{% set snapshot_name_2 = snapshot_name_2 or 'volume2_snap' %}
+{% set image_name = image_name or "cirros-0.3.5" %}
+{% set volume_size = volume_size or 10 %}
+{% set network = network or "ext-net" %}
+{% set flavor = flavor or "yardstick-flavor" %}
+{% set force = force or "True" %}
+
+scenarios:
+-
+  type: GetNetworkID
+
+  options:
+    network_name: {{network}}
+  output: rc network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateInstance
+  options:
+    image_name: {{image_name}}
+    flavor_name: {{flavor}}
+    openstack_paras:
+      nics: [{"net-id": $network_id}]
+      name: yardstick_test_vm
+  output: server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% for (i, volume_name) in [('1', 'volume1'), ('2', 'volume2')] %}
+-
+  type: CreateVolume
+  options:
+    volume_name: {{volume_name}}
+    size: {{volume_size}}
+  output: volume_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+{% endfor %}
+
+-
+  type: AttachVolume
+  options:
+    server_id: $server_id
+    volume_id: $volume_id_2
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateSnapshotFromVolume
+  options:
+    name: {{snapshot_name_1}}
+    volume: $volume_id_1
+  output: snapshot_id_1
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateSnapshotFromVolume
+  options:
+    name: {{snapshot_name_2}}
+    volume: $volume_id_2
+    force: {{force}}
+  output: snapshot_id_2
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteInstance
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 20
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% for i in ['1', '2'] %}
+-
+  type: DeleteSnapshot
+  options:
+    snapshot_id: $snapshot_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+{% endfor %}
+
+-
+  type: Suspend
+  options:
+    timeout: 40
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% for i in ['1', '2'] %}
+-
+  type: DeleteVolume
+
+  options:
+     volume_id: $volume_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+{% endfor %}
+
+context:
+  type: Dummy
+

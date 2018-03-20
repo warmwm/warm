@@ -1,0 +1,7 @@
+- name: show KVM version of compute
+  shell: cat /proc/cpuinfo | grep -i vmx
+  args:
+    executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+

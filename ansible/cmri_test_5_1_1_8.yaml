@@ -1,0 +1,59 @@
+---
+- hosts: localhost
+  tasks:
+    - include: dedicated_compute.yml
+    - name: create VM
+      shell:
+        source {{ inventory_dir }}/openstack.creds;
+        export vm1_name={{ prefix }}_$RANDOM;
+        export vm2_name={{ prefix }}_$RANDOM;
+        echo $vm1_name;
+        echo $vm2_name;
+        openstack server create --flavor {{ prefix }}_dedicated_compute --image centos_yardstick --nic net-id={{ network }}  \
+        --security-group sg_yardstick --key key_yardstick $vm1_name;
+        openstack server create --flavor {{ prefix }}_dedicated_compute --image centos_yardstick --nic net-id={{ network }}  \
+        --security-group sg_yardstick --key key_yardstick $vm2_name;
+      args:
+        executable: /bin/bash
+      register: o_create_vm
+    - debug: var=o_create_vm.stdout_lines
+
+    - name: get VM IP
+      shell:
+        sleep 40;
+        source {{ inventory_dir }}/openstack.creds;
+        openstack server show {{ o_create_vm.stdout_lines[0] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+        openstack server show {{ o_create_vm.stdout_lines[1] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+      args:
+        executable: /bin/bash
+      register: o_vm_ip
+    - debug: var=o_vm_ip.stdout_lines
+
+    - name: connect to VM1 and ping VM2
+      ignore_errors: True
+      shell:
+        ssh -i {{ inventory_dir }}/ssh/id_rsa -F {{ inventory_dir }}/ssh/ssh_config root@{{ o_vm_ip.stdout_lines[0] }} \
+        'ifconfig' || echo 'ERROR';
+        echo ------------------------------------------------------------------------------------------------------;
+        sleep 20;
+        ssh -i {{ inventory_dir }}/ssh/id_rsa -F {{ inventory_dir }}/ssh/ssh_config root@{{ o_vm_ip.stdout_lines[1] }} \
+        'ifconfig' || echo 'ERROR';
+        echo ------------------------------------------------------------------------------------------------------;
+        ssh -i {{ inventory_dir }}/ssh/id_rsa -F {{ inventory_dir }}/ssh/ssh_config root@{{ o_vm_ip.stdout_lines[0] }} \
+        'ping -c 3 {{ o_vm_ip.stdout_lines[1] }}' || echo 'ERROR';
+      args:
+        executable: /bin/bash
+      register: cmd
+    - debug: var=cmd.stdout_lines
+    - debug: var=cmd.stderr_lines
+
+- hosts: localhost
+  tasks:
+    - name: delete VM
+      shell:
+        source {{ inventory_dir }}/openstack.creds;
+        openstack server delete {{ hostvars['localhost']['o_create_vm'].stdout_lines[0] }} \
+        {{ hostvars['localhost']['o_create_vm'].stdout_lines[1] }};
+      args:
+        executable: /bin/bash
+

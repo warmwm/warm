@@ -1,0 +1,15 @@
+- name: show CPU pinning info of VM
+  ignore_errors: True
+  shell:
+    sleep 20;
+    for inst in `virsh list | awk '{if (NR>2){print $2}}' | xargs`;
+    do
+    echo --------------------------------------------------------------------------------------------;
+    echo $inst':';
+    virsh vcpupin $inst;
+    done;
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+- debug: var=cmd.stderr_lines

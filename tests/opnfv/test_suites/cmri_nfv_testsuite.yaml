@@ -1,0 +1,60 @@
+schema: "yardstick:suite:0.1"
+
+name: "yardstick-cmri-nfv-testsuite"
+test_cases_dir: "tests/opnfv/test_cases/"
+
+
+test_cases:
+
+-
+    file_name: cmri_test_5_1_1_1.yaml
+    task_args:
+      default: '{"network": "ext-net"}'
+
+-
+    file_name: cmri_test_5_1_2_10_1.yaml
+
+-
+    file_name: cmri_test_5_1_4_1_2.yaml
+
+-
+    file_name: cmri_test_5_1_4_1_3.yaml
+
+-
+    file_name: cmri_test_5_2_1_1_3.yaml
+
+-
+    file_name: cmri_test_5_2_1_2_3.yaml
+
+-
+    file_name: cmri_test_5_2_1_3_4.yaml
+    task_args:
+      default: '{"network": "ext-net"}'
+
+-
+    file_name: cmri_test_5_2_1_4_5.yaml
+
+-
+    file_name: cmri_test_5_2_1_5_1_3.yaml
+
+-
+    file_name: cmri_test_5_2_2_1.yaml
+    task_args:
+      default: '{"network": "ext-net"}'
+
+-
+    file_name: cmri_test_5_2_2_2.yaml
+    task_args:
+      default: '{"network": "ext-net"}'
+
+-
+    file_name: cmri_test_5_2_2_4.yaml
+    task_args:
+      default: '{"network": "ext-net"}'
+
+-
+    file_name: cmri_test_5_2_3_1.yaml
+    task_args:
+      default: '{"network": "ext-net"}'
+
+

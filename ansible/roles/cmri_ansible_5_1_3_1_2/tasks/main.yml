@@ -1,0 +1,9 @@
+- name: show disk allocation ratio of compute
+  ignore_errors: True
+  shell:
+    cat /etc/nova/nova.conf | grep 'disk_allocation_ratio' || echo 'ERROR';
+  args:
+    executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+- debug: var=cmd.stderr_lines

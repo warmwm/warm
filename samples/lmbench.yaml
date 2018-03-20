@@ -1,0 +1,76 @@
+##############################################################################
+# Copyright (c) 2017 kristian.hunt@gmail.com and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# Sample benchmark task config file
+# measure memory read latency and memory bandwidth using lmbench
+
+schema: "yardstick:task:0.1"
+
+scenarios:
+-
+  type: Lmbench
+  options:
+    test_type: "latency"
+    stop_size: 32.0
+
+  host: demeter.demo
+
+  runner:
+    type: Arithmetic
+    iterators:
+    -
+      name: stride
+      start: 64
+      stop: 128
+      step: 64
+
+  sla:
+    max_latency: 35
+    action: monitor
+-
+  type: Lmbench
+  options:
+    test_type: "bandwidth"
+    benchmark: "wr"
+
+  host: demeter.demo
+
+  runner:
+    type: Arithmetic
+    iterators:
+    -
+      name: size
+      start: 500
+      stop: 2000
+      step: 500
+
+  sla:
+    min_bandwidth: 10000
+    action: monitor
+
+context:
+  name: demo
+  image: yardstick-image
+  flavor: yardstick-flavor
+  user: ubuntu
+
+  placement_groups:
+    pgrp1:
+      policy: "availability"
+
+  servers:
+    demeter:
+      floating_ip: true
+      placement: "pgrp1"
+
+  networks:
+    test:
+      cidr: '10.0.1.0/24'
+
+

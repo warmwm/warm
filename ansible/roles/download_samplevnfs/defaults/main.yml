@@ -1,0 +1,4 @@
+---
+samplevnf_url: "https://git.opnfv.org/samplevnf"
+samplevnf_dest: "{{ clone_dest }}/samplevnf"
+samplevnf_version: "master"

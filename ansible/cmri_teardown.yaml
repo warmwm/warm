@@ -1,0 +1,41 @@
+---
+-   hosts: localhost
+    vars:
+        dedicated_compute: 'host5'
+    tasks:
+
+        - name: delete flavor yardstick-dedicated_compute-flavor
+          shell:
+              source /etc/yardstick/openstack.creds;
+              openstack flavor delete yardstick-dedicated_compute-flavor
+          args:
+              executable: /bin/bash
+
+        - name: get flavor list
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack flavor list | grep "True" | cut -f 2 -d ' ';
+          args:
+              executable: /bin/bash
+          register: flavors
+        - debug: var=flavors.stdout_lines
+
+        - name: unset flavor default property
+          shell:
+            source /etc/yardstick/openstack.creds;
+            openstack flavor unset --property aggregate_instance_extra_specs:dedicated_compute {{item}};
+          args:
+              executable: /bin/bash
+          with_items:
+              - '{{ flavors.stdout_lines }}'
+
+        - name: delete dedicated_compute host aggregate
+          shell:
+            source /etc/yardstick/openstack.creds;
+            nova aggregate-remove-host dedicated_compute {{ dedicated_compute }};
+            openstack aggregate delete dedicated_compute;
+          args:
+              executable: /bin/bash
+          register: cmd
+        - debug: var=cmd.stdout_lines
+

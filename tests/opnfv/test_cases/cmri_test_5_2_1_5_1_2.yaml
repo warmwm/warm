@@ -1,0 +1,95 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.5.1.2 'crud Network'
+
+schema: "yardstick:task:0.1"
+
+{% set name = name or "crud_Network" %}
+
+{% set net_cidr = net_cidr or "10.10.10.0/24" %}
+{% set provider_type = provider_type or "vlan" %}
+{% set segment_id = segment_id or "3640" %}
+{% set physic_net = physic_net or "physnet" %}
+
+scenarios:
+-
+  type: CreateNetwork
+
+  options:
+    openstack_paras:
+      name: {{name}}_net
+      admin_state_up: True
+      shared: True
+      provider:network_type: {{provider_type}}
+      provider:segmentation_id: {{segment_id}}
+      provider:physical_network: {{physic_net}}
+  output: network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateSubnet
+
+  options:
+    openstack_paras:
+      network_id: $network_id
+      name: {{name}}_subnet
+      cidr: {{net_cidr}}
+      allocation_pools:
+        - start: 10.10.10.100
+          end: 10.10.10.150
+      enable_dhcp: True
+      ip_version: 4
+  output: subnet_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: UpdateNetwork
+  options:
+    network_id: $network_id
+    openstack_paras:
+      name: {{name}}_network_update
+      shared: False
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelSubnet
+
+  options:
+    subnet_id: $subnet_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelNetwork
+
+  options:
+    network_id: $network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

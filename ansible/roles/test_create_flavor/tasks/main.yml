@@ -1,0 +1,53 @@
+---
+# Copyright (c) 2017 Intel Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# openstack role assignment list --names
+- name: create flavor
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack flavor create --vcpus 2 --ram 1024 --disk 5 wm_flavor;
+  args:
+      executable: /bin/bash
+  register: o_create_flavor
+- debug: var=o_create_flavor.stdout_lines
+
+- name: create VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack server create --flavor wm_flavor --image centos_yardstick \
+                                        --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick test_vm1;
+    openstack server create --flavor wm_flavor --image centos_yardstick \
+                                        --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick test_vm2;
+    openstack server create --flavor wm_flavor --image centos_yardstick \
+                                        --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick test_vm3;
+  args:
+      executable: /bin/bash
+  register: o_create_vm
+- debug: var=o_create_vm.stdout_lines
+
+- name: delete VM
+  shell:
+    sleep 40;
+    source /etc/yardstick/openstack.creds;
+    openstack server delete test_vm1 test_vm2 test_vm3;
+  args:
+      executable: /bin/bash
+
+- name: delete flavor
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack flavor delete wm_flavor;
+  args:
+      executable: /bin/bash
+

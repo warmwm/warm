@@ -1,0 +1,19 @@
+- name: show NUMA info of VM
+  ignore_errors: True
+  shell:
+    sleep 20;
+    echo ------------------------------------- virsh ----------------------------------------------;
+    virsh list;
+    virsh list --uuid;
+    echo ---------------------------------------- numactl -H -------------------------------------------;
+    numactl -H;
+    echo --------------------------------------- numastat -n -p qemu-system-x86 --------------------------------------------;
+    numastat -n -p qemu-system-x86;
+    echo ------------------- numastat -n -p $vm_id {{ hostvars['localhost']['vm_id'].stdout_lines[-1] }} ---------------------;
+    numastat -n -p {{ hostvars['localhost']['vm_id'].stdout_lines[0] }};
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+- debug: var=cmd.stderr_lines
+

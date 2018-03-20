@@ -1,0 +1,24 @@
+- name: make sure VM is created in the dedicate compute
+  no_log: False
+  ignore_errors: True
+  shell:
+    source {{ inventory_dir }}/openstack.creds;
+    ha_name={{ prefix }}_dedicated_compute;
+    flv_name={{ prefix }}_dedicated_compute;
+    openstack aggregate show $ha_name > /dev/null && {
+    openstack aggregate remove host $ha_name {{ dedicated_compute }} > /dev/null;
+    openstack aggregate delete $ha_name > /dev/null; };
+    openstack flavor show $flv_name > /dev/null && { openstack flavor delete $flv_name; };
+    openstack aggregate create $ha_name > /dev/null;
+    openstack aggregate set $ha_name --property dedicated_compute=true > /dev/null;
+    openstack aggregate add host $ha_name {{ dedicated_compute }} > /dev/null;
+    openstack flavor create $flv_name --vcpus 3 --ram 1024 --disk 5 > /dev/null;
+    openstack flavor set --property aggregate_instance_extra_specs:dedicated_compute=true $flv_name > /dev/null;
+    openstack aggregate show $ha_name;
+    openstack flavor show $flv_name;
+    true;
+  args:
+    executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+

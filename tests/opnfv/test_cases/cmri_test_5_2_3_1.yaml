@@ -1,0 +1,158 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.3.1 'create stack'
+
+schema: "yardstick:task:0.1"
+
+
+{% set name = name or "yardstick" %}
+
+{% set image = image or "cirros-0.3.5" %}
+{% set network = network or "ext-net" %}
+{% set key_path = key_path or "/tmp/yardstick_key" %}
+
+{% set flavor_name = flavor_name or 'my_flavor' %}
+{% set server_name = server_name or 'VM1' %}
+
+scenarios:
+
+-
+  type: CreateKeypair
+  options:
+    key_name: {{name}}_key
+    key_path: {{key_path}}
+  output: key_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateStack
+  options:
+    name: {{name}}_stack
+    timeout: 600
+    template_data:
+      heat_template_version: "2013-05-23"
+      description: "Simple template to boot from volume"
+      resources:
+        flavor:
+          type: OS::Nova::Flavor
+          properties:
+            disk: 10
+            ephemeral: 0
+            is_public: True
+            name: {{flavor_name}}
+            ram: 4096
+            vcpus: 2
+
+        bootable_volume:
+          type: OS::Cinder::Volume
+          properties:
+            size: 10
+            image: {{image}}
+
+        instance:
+          type: OS::Nova::Server
+          properties:
+            flavor: { get_resource: flavor }
+            name: {{server_name}}
+            networks:
+              - network: {{network}}
+            block_device_mapping:
+              - device_name: vda
+                volume_id: { get_resource: bootable_volume }
+                delete_on_termination: false
+            key_name: {{name}}_key
+  output: stack_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetFlavor
+  options:
+    flavor_name: {{flavor_name}}
+  output: status flavor
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CheckValue
+
+  options:
+    value1: $status
+    value2: 0
+    operator: eq
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServer
+
+  options:
+    server_name: {{server_name}}
+
+  output: status server
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServerAttr
+
+  options:
+    server: $server
+  output: status key_name
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CheckValue
+  options:
+    value1: $status
+    value2: "ACTIVE"
+    operator: eq
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: CheckValue
+  options:
+    value1: $key_name
+    value2: {{name}}_key
+    operator: eq
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteStack
+  options:
+    stack_id: $stack_id
+    timout: 600
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DelKeypair
+
+  options:
+    key_name: $key_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy

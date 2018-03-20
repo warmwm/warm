@@ -1,0 +1,57 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.1.4.4 'volume type'
+
+schema: "yardstick:task:0.1"
+
+{% set volume_name = volume_name or 'volume1' %}
+{% set image = image or "cirros-0.3.5" %}
+{% set volume_size = volume_size or 10 %}
+
+scenarios:
+
+{% for (i, type) in [('1', 'Type-A'), ('2', 'iscsi')] %}
+-
+  type: CreateVolumeType
+
+  options:
+    volume_name: volume_{{i}}
+    size: {{ volume_size }}
+    volume_type: {{ type }}
+    image_name: {{ image }}
+  output: volume_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+{% endfor %}
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+
+{% for i in [ '1', '2' ] %}
+-
+  type: DeleteVolume
+
+  options:
+     volume_id: $volume_id_{{i}}
+  runner:
+    type: Iteration
+    iterations: 1
+{% endfor %}
+
+context:
+  type: Dummy
+

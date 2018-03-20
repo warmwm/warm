@@ -1,0 +1,26 @@
+Project: Test framework for verifying infrastructure compliance (yardstick)
+Project Creation Date: April 28th, 2015
+Project Category: Integration & Testing
+Lifecycle State: Incubation
+Primary Contact: ross.b.brattain@intel.com
+Project Lead: ross.b.brattain@intel.com
+Jira Project Name: Infrastructure Verification
+Jira Project Prefix: Yardstick
+Mailing list tag: [Yardstick]
+IRC: #opnfv-yardstick
+Repository: yardstick
+
+Committers:
+jorgen.w.karlsson@ericsson.com
+jean.gaoliang@huawei.com
+vincenzo.m.riccobene@intel.com
+lvjing5@huawei.com
+wu.zhihui1@zte.com.cn
+14_ykl@tongji.edu.cn
+limingjiang@huawei.com
+trevor.cooper@intel.com
+ross.b.brattain@intel.com
+
+Link to TSC approval: http://meetbot.opnfv.org/meetings/
+Link to approval of additional submitters:
+Link to approval of new PTL: Done via Condorcet Internet Voting Service, avaliable from Raymond Piak

@@ -1,0 +1,114 @@
+##############################################################################
+# Copyright (c) 2017 CMRI
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+
+---
+# TestCase 5.2.2.6 'hard reboot instance'
+
+schema: "yardstick:task:0.1"
+
+{% set vcpus = vcpus or "4" %}
+{% set ram = ram or "8192" %}
+{% set disk = disk or "10" %}
+
+{% set name = name or "yardstick" %}
+{% set flavor = flavor or "yardstick-flavor" %}
+{% set image = image or "cirros-0.3.5" %}
+{% set network = network or "ext-net" %}
+{% set flavor_name = flavor_name or "yardstick_test_flavor" %}
+{% set new_server_name = new_server_name or "new_name" %}
+
+scenarios:
+
+-
+  type: GetNetworkID
+
+  options:
+    network_name: {{network}}
+  output: rc network_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateFlavor
+  options:
+    flavor_name: {{flavor_name}}
+    vcpus: {{vcpus}}
+    ram: {{ram}}
+    disk: {{disk}}
+    is_public: True
+  output: flavor_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: CreateInstance
+  options:
+    image_name: {{image}}
+    flavor_name: {{flavor}}
+    openstack_paras:
+      nics: [{"net-id": $network_id}]
+      name: yardstick_test_vm
+  output: server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: GetServer
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 10
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: RebootServer
+  options:
+    server_id: $server_id
+    reboot_type: HARD
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: Suspend
+  options:
+    timeout: 30
+  runner:
+    type: Iteration
+    iterations: 1
+-
+  type: DeleteInstance
+  options:
+    server_id: $server_id
+  runner:
+    type: Iteration
+    iterations: 1
+
+-
+  type: DeleteFlavor
+  options:
+    flavor_name: {{flavor_name}}
+  runner:
+    type: Iteration
+    iterations: 1
+
+context:
+  type: Dummy
+

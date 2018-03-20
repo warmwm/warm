@@ -1,0 +1,200 @@
+- name: create networks
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export net1_name=test_net1_$RANDOM;
+    export net2_name=test_net2_$RANDOM;
+    openstack network create --share --provider-physical-network physnet --provider-network-type vlan --provider-segment 1507 $net1_name;
+    openstack network create --share --provider-physical-network physnet --provider-network-type vlan --provider-segment 1508 $net2_name;
+    echo $net1_name;
+    echo $net2_name;
+  args:
+    executable: /bin/bash
+  register: o_create_net
+- debug: var=o_create_net.stdout_lines
+
+- name: create subnets
+  shell:
+    sleep 5;
+    source /etc/yardstick/openstack.creds;
+    export sub1_name=test_sub1_$RANDOM;
+    export sub2_name=test_sub2_$RANDOM;
+    openstack subnet create --network '{{ o_create_net.stdout_lines[-2] }}' --allocation-pool start=10.0.2.100,end=10.0.2.200 \
+    --gateway 10.0.2.1 --subnet-range 10.0.2.0/24 $sub1_name;
+    openstack subnet create --network '{{ o_create_net.stdout_lines[-1] }}' --allocation-pool start=10.0.3.100,end=10.0.3.200 \
+    --gateway 10.0.3.1 --subnet-range 10.0.3.0/24 $sub2_name;
+    openstack subnet show $sub1_name;
+    openstack subnet show $sub2_name;
+    echo $sub1_name;
+    echo $sub2_name;
+  args:
+    executable: /bin/bash
+  register: o_create_sub
+- debug: var=o_create_sub.stdout_lines
+
+- name: create VM
+  shell:
+    sleep 10;
+    source /etc/yardstick/openstack.creds;
+    export vm1_name=test_vm1_$RANDOM;
+    export vm2_name=test_vm2_$RANDOM;
+    export vm3_name=test_vm3_$RANDOM;
+    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id={{ o_create_net.stdout_lines[-2] }} \
+    --security-group sg_yardstick --key key_yardstick $vm1_name;
+    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id={{ o_create_net.stdout_lines[-2] }} \
+    --security-group sg_yardstick --key key_yardstick $vm2_name;
+    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id={{ o_create_net.stdout_lines[-1] }} \
+    --security-group sg_yardstick --key key_yardstick $vm3_name;
+    echo $vm1_name;
+    echo $vm2_name;
+    echo $vm3_name;
+  args:
+    executable: /bin/bash
+  register: o_create_vm
+- debug: var=o_create_vm.stdout_lines
+
+- name: create new volume
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export vol_name=test_vlo_$RANDOM;
+    echo $vol_name;
+    openstack volume create --size 5 $vol_name;
+  args:
+    executable: /bin/bash
+  register: o_create_vol
+- debug: var=o_create_vol.stdout_lines
+
+- name: add new volume to server
+  shell:
+    sleep 20;
+    source /etc/yardstick/openstack.creds;
+    openstack server add volume {{ o_create_vm.stdout_lines[-3] }} {{ o_create_vol.stdout_lines[0] }};
+    openstack volume show {{ o_create_vol.stdout_lines[0] }};
+  args:
+    executable: /bin/bash
+  register: o_add_vol
+- debug: var=o_add_vol.stdout_lines
+
+- name: create and config router
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export router_name=test_router_$RANDOM;
+    openstack router create $router_name;
+    openstack router set $router_name --external-gateway ext-net;
+    openstack router add subnet $router_name {{ o_create_sub.stdout_lines[-2] }};
+    openstack router show $router_name;
+    echo $router_name;
+  args:
+    executable: /bin/bash
+  register: o_create_router
+- debug: var=o_create_router.stdout_lines
+
+- name: get VM IP
+  shell:
+    sleep 20;
+    source /etc/yardstick/openstack.creds;
+    openstack server show {{ o_create_vm.stdout_lines[-3] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+    openstack server show {{ o_create_vm.stdout_lines[-2] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+    openstack server show {{ o_create_vm.stdout_lines[-1] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+  args:
+    executable: /bin/bash
+  register: o_vm_ip
+- debug: var=o_vm_ip.stdout_lines
+
+- name: floating ip association
+  shell:
+    source /etc/yardstick/openstack.creds;
+    export subnet_id=`openstack subnet show {{ o_create_sub.stdout_lines[-2] }} | grep ' id ' | awk -F'|' '{print $3}'`;
+    export port_id=`openstack port list | grep $subnet_id |  grep {{ o_vm_ip.stdout_lines[-3] }} | awk -F'|' '{print $2}' | xargs`;
+    openstack floating ip create --port $port_id ext-net | grep 'floating_ip_address' | awk -F'|' '{print $3}' | xargs;
+  args:
+    executable: /bin/bash
+  register: o_create_fip
+- debug: var=o_create_fip.stdout_lines
+
+- name: VM pings each other
+  shell:
+    source /etc/yardstick/openstack.creds;
+    echo -------------------------------------------------------------------------------------------;
+    ssh -i /etc/yardstick/ssh/id_rsa -F /etc/yardstick/ssh/ssh_config root@{{ o_create_fip.stdout_lines[-1] }} \
+    'ping -c 3 {{ o_vm_ip.stdout_lines[-2] }}' || echo 'ERROR';
+    echo -------------------------------------------------------------------------------------------;
+    ssh -i /etc/yardstick/ssh/id_rsa -F /etc/yardstick/ssh/ssh_config root@{{ o_create_fip.stdout_lines[-1] }} \
+    'ping -c 3 {{ o_vm_ip.stdout_lines[-1] }}' || echo 'ERROR';
+  args:
+    executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+
+- name: write to volume and show it
+  shell:
+    ssh -i /etc/yardstick/ssh/id_rsa -F /etc/yardstick/ssh/ssh_config root@{{ o_create_fip.stdout_lines[-1] }} '
+    echo ------------------------------------------ disk list ------------------------------------------;
+    fdisk -l;
+    echo ------------------------------------------ disk formatting ------------------------------------------;
+    mkfs.ext4 /dev/vdb;
+    echo ------------------------------------------ mount disk, write, and umount ------------------------------------------;
+    mount /dev/vdb /mnt;
+    echo "hellow world!" > /mnt/test;
+    cat /mnt/test;
+    umount /dev/vdb;
+    ' || echo 'ERROR';
+  args:
+      executable: /bin/bash
+  register: cmd
+- debug: var=cmd.stdout_lines
+
+- name: remove volume from VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack server remove volume {{ o_create_vm.stdout_lines[-3] }} {{ o_create_vol.stdout_lines[0] }};
+  args:
+    executable: /bin/bash
+
+- name: delete volume
+  shell:
+    sleep 30;
+    source /etc/yardstick/openstack.creds;
+    openstack volume delete {{ o_create_vol.stdout_lines[0] }};
+  args:
+    executable: /bin/bash
+  ignore_errors: True
+
+- name: delete floating ip
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack floating ip delete {{ o_create_fip.stdout_lines[-1] }};
+  args:
+    executable: /bin/bash
+
+- name: delete router
+  shell:
+    sleep 40;
+    source /etc/yardstick/openstack.creds;
+    openstack router remove subnet {{ o_create_router.stdout_lines[-1] }} {{ o_create_sub.stdout_lines[-2] }};
+    openstack router delete {{ o_create_router.stdout_lines[-1] }};
+  args:
+    executable: /bin/bash
+
+- name: delete VM
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack server delete {{ o_create_vm.stdout_lines[-1] }} {{ o_create_vm.stdout_lines[-2] }} {{ o_create_vm.stdout_lines[-3] }};
+  args:
+    executable: /bin/bash
+
+- name: delete subnet
+  shell:
+    sleep 30;
+    source /etc/yardstick/openstack.creds;
+    openstack subnet delete {{ o_create_sub.stdout_lines[-1] }} {{ o_create_sub.stdout_lines[-2] }};
+  args:
+    executable: /bin/bash
+
+- name: delete networks
+  shell:
+    source /etc/yardstick/openstack.creds;
+    openstack network delete {{ o_create_net.stdout_lines[-1] }} {{ o_create_net.stdout_lines[-2] }};
+  args:
+    executable: /bin/bash
+
+

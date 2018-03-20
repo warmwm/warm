@@ -1,0 +1,43 @@
+##############################################################################
+# Copyright (c) 2017 Ericsson AB and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# Sample benchmark task config file
+# Measure network latency using ping, destination is an external server
+# Make sure servers have internet access before running this test.
+# For example using virtual MOS do something this on the host:
+# sudo iptables -t nat -A POSTROUTING -s 172.16.0.0/24 \! -d 172.16.0.0/24 -j MASQUERADE
+#
+
+schema: "yardstick:task:0.1"
+
+scenarios:
+-
+  type: Ping
+  host: hermes.demo
+  target: 8.8.8.8
+  runner:
+    type: Duration
+    duration: 60
+    interval: 1
+  sla:
+    max_rtt: 10
+    action: monitor
+
+context:
+  name: demo
+  image: cirros-0.3.5
+  flavor: yardstick-flavor
+  user: cirros
+  servers:
+    hermes:
+      floating_ip: true
+  networks:
+    test:
+      cidr: '10.0.1.0/24'
+

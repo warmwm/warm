@@ -1,0 +1,23 @@
+##############################################################################
+# Copyright (c) 2017 lihuansse@tongji.edu.cn and others.
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Apache License, Version 2.0
+# which accompanies this distribution, and is available at
+# http://www.apache.org/licenses/LICENSE-2.0
+##############################################################################
+---
+# sample config file for ha test
+#
+schema: "yardstick:task:0.1"
+
+process-checker:
+  verify_script: ha_tools/check_process_python.bash
+service-checker:
+  verify_script: ha_tools/check_service.bash
+nova-instance-checker:
+  verify_script: ha_tools/nova/show_instances.bash
+nova-flavor-checker:
+  verify_script: ha_tools/nova/show_flavors.bash
+pacemaker-resource-checker:
+  verify_script: ha_tools/pacemaker/get_resource_status_host.bash
