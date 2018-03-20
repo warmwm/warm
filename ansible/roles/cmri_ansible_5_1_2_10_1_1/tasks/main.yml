@@ -1,8 +1,8 @@
 - name: set flv_dedicated_compute property
   shell:
     source /etc/yardstick/openstack.creds;
-    openstack flavor set --property hw:numa_nodes=1 test_dedicated_compute;
-    openstack flavor show test_dedicated_compute;
+    openstack --insecure flavor set --property hw:numa_nodes=1 test_dedicated_compute;
+    openstack --insecure flavor show test_dedicated_compute;
   args:
       executable: /bin/bash
   register: cmd
@@ -12,9 +12,9 @@
   shell:
     source /etc/yardstick/openstack.creds;
     export vm_name=test_vm_$RANDOM;
-    openstack server create --flavor test_dedicated_compute --image centos_yardstick --nic net-id=ext-net  \
+    openstack --insecure server create --flavor test_dedicated_compute --image centos_yardstick --nic net-id=ext-net  \
     --security-group sg_yardstick --key key_yardstick $vm_name;
-    openstack server list | grep $vm_name | awk '{print $2}';
+    openstack --insecure server list | grep $vm_name | awk '{print $2}';
   args:
       executable: /bin/bash
   register: vm_id
