@@ -41,5 +41,6 @@
     openstack --insecure flavor delete {{ o_create_flavor.stdout_lines[0] }};
   args:
     executable: /bin/bash
+    
 
 
