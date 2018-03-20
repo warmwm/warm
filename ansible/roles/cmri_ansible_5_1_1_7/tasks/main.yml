@@ -3,7 +3,7 @@
     source /etc/yardstick/openstack.creds;
     export vm_name=test_vm_$RANDOM;
     echo $vm_name;
-    openstack server create --flavor yardstick-flavor --image centos_yardstick --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm_name;
+    openstack --insecure server create --flavor yardstick-flavor --image centos_yardstick --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm_name;
   args:
     executable: /bin/bash
   register: o_create_vm
@@ -13,7 +13,7 @@
   shell:
     sleep 40;
     source /etc/yardstick/openstack.creds;
-    openstack server show {{ o_create_vm.stdout_lines[0] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
+    openstack --insecure server show {{ o_create_vm.stdout_lines[0] }} | grep address | awk -F '|' '{print $3}' | awk -F "=" '{print $2}' | xargs;
   args:
       executable: /bin/bash
   register: o_show_vm
@@ -31,7 +31,7 @@
 - name: delete VM
   shell:
     source /etc/yardstick/openstack.creds;
-    openstack server delete {{ o_create_vm.stdout_lines[0] }};
+    openstack --insecure server delete {{ o_create_vm.stdout_lines[0] }};
   args:
       executable: /bin/bash
 
