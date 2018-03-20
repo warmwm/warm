@@ -1,7 +1,7 @@
 - name: delete VM
   shell:
     source /etc/yardstick/openstack.creds;
-    openstack server delete {{ hostvars['localhost']['o_create_vm'].stdout_lines[0] }};
+    openstack --insecure server delete {{ hostvars['localhost']['o_create_vm'].stdout_lines[0] }};
   args:
       executable: /bin/bash
   register: cmd
