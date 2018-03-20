@@ -1,8 +1,8 @@
 - name: set flv_dedicated_compute property
   shell:
     source /etc/yardstick/openstack.creds;
-    openstack flavor set --property hw:cpu_model='host-model' test_dedicated_compute;
-    openstack flavor show test_dedicated_compute;
+    openstack --insecure flavor set --property hw:cpu_model='host-model' test_dedicated_compute;
+    openstack --insecure flavor show test_dedicated_compute;
   args:
     executable: /bin/bash
   register: o_set_flv
@@ -12,9 +12,9 @@
   shell:
     source /etc/yardstick/openstack.creds;
     export vm_name=test_vm_$RANDOM;
-    openstack server create --flavor test_dedicated_compute --image centos_yardstick \
+    openstack --insecure server create --flavor test_dedicated_compute --image centos_yardstick \
     --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm_name;
-    openstack server show $vm_name | grep 'OS-EXT-SRV-ATTR:instance_name' | awk -F'|' '{print $3}' | xargs;
+    openstack --insecure server show $vm_name | grep 'OS-EXT-SRV-ATTR:instance_name' | awk -F'|' '{print $3}' | xargs;
     echo $vm_name;
   args:
       executable: /bin/bash
