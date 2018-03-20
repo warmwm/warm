@@ -3,7 +3,7 @@
     source /etc/yardstick/openstack.creds;
     export vm_name=test_vm_$RANDOM;
     echo $vm_name;
-    openstack server create --flavor test_dedicated_compute --image centos_yardstick \
+    openstack --insecure server create --flavor test_dedicated_compute --image centos_yardstick \
     --nic net-id=ext-net  --security-group sg_yardstick --key key_yardstick $vm_name;
   args:
       executable: /bin/bash
